@@ -1,11 +1,9 @@
-﻿using Spine;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public enum BattleState { START, PLAYERTURN, ENEMYTURN, WON, LOST }
 
@@ -45,31 +43,41 @@ public class BattleSystem : MonoBehaviour
         }
         state = BattleState.PLAYERTURN;
         RandomizeList(ref _PlayerSquad);
-        //StartCoroutine(SetupBattle());
     }
     IEnumerator PerformAttack(Unit attackerUnit, Unit defenderUnit)
     {
-        Vector3 _DefenderStartPosition = defenderUnit.transform.position;
-        defenderUnit.transform.position = (state == BattleState.PLAYERTURN) ? _EnemyAttackPosition.position : _PlayerAttackPosition.position;
-        defenderUnit.transform.localScale *= 1.2f;
-
-        Vector3 _AttackerStartPosition = attackerUnit.transform.position;
-        attackerUnit.transform.position = (state == BattleState.PLAYERTURN) ? _PlayerAttackPosition.position : _EnemyAttackPosition.position;
-        attackerUnit.transform.localScale *= 1.2f;
+        Vector3 _DefenderStartPosition;
+        Vector3 _AttackerStartPosition;
+        MoveUnitsToForeground(attackerUnit, defenderUnit, out _DefenderStartPosition, out _AttackerStartPosition);
 
         yield return new WaitForSeconds(2f);
 
         attackerUnit.PlayAnimationOnce(Unit.UnitAnimations.Miner_1);
         defenderUnit.TakeDamage(attackerUnit.damage);
         _BattleLog.SetText(attackerUnit.name + " hits on " + attackerUnit.damage + " hp " + defenderUnit.name + "!");
+
         yield return new WaitForSeconds(2f);
 
+        MoveUnitsToBackGround(attackerUnit, defenderUnit, _DefenderStartPosition, _AttackerStartPosition);
+
+        yield return new WaitForSeconds(2f);
+    }
+    private void MoveUnitsToForeground(Unit attackerUnit, Unit defenderUnit, out Vector3 _DefenderStartPosition, out Vector3 _AttackerStartPosition)
+    {
+        _DefenderStartPosition = defenderUnit.transform.position;
+        defenderUnit.transform.position = (state == BattleState.PLAYERTURN) ? _EnemyAttackPosition.position : _PlayerAttackPosition.position;
+        defenderUnit.transform.localScale *= 1.2f;
+
+        _AttackerStartPosition = attackerUnit.transform.position;
+        attackerUnit.transform.position = (state == BattleState.PLAYERTURN) ? _PlayerAttackPosition.position : _EnemyAttackPosition.position;
+        attackerUnit.transform.localScale *= 1.2f;
+    }
+    private void MoveUnitsToBackGround(Unit attackerUnit, Unit defenderUnit, Vector3 _DefenderStartPosition, Vector3 _AttackerStartPosition)
+    {
         attackerUnit.transform.position = _AttackerStartPosition;
         defenderUnit.transform.position = _DefenderStartPosition;
         defenderUnit.transform.localScale /= 1.2f;
         attackerUnit.transform.localScale /= 1.2f;
-
-        yield return new WaitForSeconds(2f);
     }
 
     #region Click handlers
@@ -181,15 +189,5 @@ public class BattleSystem : MonoBehaviour
     {
         units = units.OrderBy(a => Guid.NewGuid()).ToList();
     }
-    #endregion
-    void EndBattle()
-    {
-        //if(state == BattleState.WON)
-        //{
-        //	dialogueText.text = "You won the battle!";
-        //} else if (state == BattleState.LOST)
-        //{
-        //	dialogueText.text = "You were defeated.";
-        //}
-    }
+    #endregion 
 }
